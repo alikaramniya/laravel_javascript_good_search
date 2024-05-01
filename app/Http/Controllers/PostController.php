@@ -7,9 +7,11 @@ use App\Models\Image;
 use App\Models\Post;
 use App\Models\User;
 use Exception;
-use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class PostController extends Controller
@@ -17,6 +19,7 @@ class PostController extends Controller
     public function localization()
     {
         return trans_choice('validation.people', 2, ['name' => 'women']);
+
         return __('validation.welcome', ['name' => 'علی']);
     }
 
@@ -26,9 +29,40 @@ class PostController extends Controller
 
         if ($lock->get()) {
             // Do something
-            
+
             $lock->release();
         }
+    }
+
+    public function gate()
+    {
+        $post = Post::find(6);
+        $user = User::find(3);
+
+        /* Gate::allowIf( */
+        /*     fn (User $user) => $user->isAdmin(), */
+        /*     message: 'دسترسی نداری', */
+        /* ); */
+
+        if (Gate::none(['create', 'update'], $post)) {
+            dd('ok');
+        } else {
+            dd('no');
+        }
+
+        /* if ($user->cannot('update-post', [$post, 'message' => 'name', 'lastName' => 'admin'])) { */
+        /*     dd('ok'); */
+        /* } */
+
+        /* $this->authorize('update-post', $post); */
+
+        /* if (Gate::allows('update-post')) { */
+        /*     dd('allowed'); */
+        /* } else { */
+        /*     dd('not allowed'); */
+        /* } */
+
+        /* return view('post.list'); */
     }
 
     public function index()
@@ -39,12 +73,16 @@ class PostController extends Controller
     public function search(Request $request)
     {
         $search = urldecode($request->field);
-        /* $search = htmlspecialchars_decode($request->field); */
 
         if ($search) {
-            $posts = Post::with('user:id,name')->where('title', 'like', "%$search%")->get();
+            /* $posts = Post::with('user:id,name')->where('title', 'like', "%$search%")->get(); */
+            $posts = DB::table('posts')->join('users', function (JoinClause $join) use ($search) {
+                $join->on('users.id', '=', 'posts.user_id')
+                    ->whereAny(['posts.title', 'users.name'], 'LIKE', "%$search%");
+            })->select('posts.title', 'users.name')->get();
         } else {
-            $posts = Post::with('user:id,name')->get();
+            $posts = DB::table('posts')->join('users', 'users.id', 'posts.user_id')
+                ->select('posts.title', 'users.name')->get();
         }
 
         return response()->json($posts);

@@ -10,6 +10,14 @@ let token = search.dataset.token;
 
 searchData();
 
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.code === 'KeyK') {
+        e.preventDefault();
+
+        search.focus();
+    }
+})
+
 search.addEventListener("input", function () {
     if (searchTimer) clearTimeout(searchTimer);
 
@@ -53,6 +61,7 @@ function searchData(searchValue = "") {
 
     xhr.addEventListener("load", function () {
         if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304) {
+            console.log(JSON.parse(xhr.responseText))
             showInList(JSON.parse(xhr.responseText));
         } else {
             console.log(xhr.status);
@@ -70,7 +79,7 @@ function showInList(posts) {
     posts.forEach((post) => {
         tbody.innerHTML += `
             <tr>
-                <td>${post.user.name}</td>
+                <td>${post.name}</td>
                 <td>${post.title}</td>
             </tr>
         `;

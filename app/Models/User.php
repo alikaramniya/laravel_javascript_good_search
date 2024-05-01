@@ -61,4 +61,8 @@ class User extends Authenticatable
     {
         return $this->mrophOne(Image::class, 'imageable');
     }
+    public function isAdmin(): bool
+    {
+        return false;
+    }
 }
